@@ -1,6 +1,6 @@
 {
   "name": "@mourasman/cypress-junit-reporter",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A JUnit reporter to be used with Cypress Module API",
   "main": "index.js",
   "repository": {
