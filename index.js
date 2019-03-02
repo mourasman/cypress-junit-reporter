@@ -203,7 +203,7 @@ module.exports = class {
     this._options.testsuitesTitle = options.testsuitesTitle || 'Mocha Tests';
   }
 
-  generate = function (cypressReport) {
+  generate(cypressReport) {
     const junitSuites = [];
 
     if (fs.existsSync(this._options.mochaFile)) {
