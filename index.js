@@ -33,44 +33,29 @@ function removeInvalidCharacters(input) {
 }
 
 function getTestcaseData(test, err, options) {
-  const flipClassAndName = options.testCaseSwitchClassnameAndName;
   const name = stripAnsi(test.title[1]);
   const classname = stripAnsi(test.title[0]);
   const config = {
     testcase: [{
       _attr: {
-        name: flipClassAndName ? classname : name,
-        time: test.timings.wallClockDuration,
-        classname: flipClassAndName ? name : classname
+        name: name,
+        time: test.wallClockDuration ? test.wallClockDuration / 1000 : 0,
+        classname: classname
       }
     }]
   };
 
   if (err) {
-    config.testcase.push({failure: {
+    config.testcase.push({
+      failure: {
         _attr: {
           message: err
         },
         _cdata: removeInvalidCharacters(err)
-      }});
+      }
+    });
   }
   return config;
-}
-
-function fullSuiteTitle(suite, options) {
-  let parent = suite.parent;
-  const title = [suite.title];
-
-  while (parent) {
-    if (parent.root && parent.title === '') {
-      title.unshift(options.rootSuiteTitle);
-    } else {
-      title.unshift(parent.title);
-    }
-    parent = parent.parent;
-  }
-
-  return stripAnsi(title.join(options.suiteTitleSeparatedBy));
 }
 
 function generateProperties(options) {
@@ -90,19 +75,12 @@ function generateProperties(options) {
   return properties;
 }
 
-function defaultSuiteTitle(suite, options) {
-  if (suite.root && suite.title === '') {
-    return stripAnsi(options.rootSuiteTitle);
-  }
-  return stripAnsi(suite.title);
-}
-
 function getTestsuiteData(suite, options) {
   const testSuite = {
     testsuite: [
       {
         _attr: {
-          name: options.useFullSuiteTitle ? fullSuiteTitle(suite) : defaultSuiteTitle(suite),
+          name: suite.tests[0].title[0],
           timestamp: new Date().toISOString().slice(0, -5),
           tests: suite.tests.length
         }
@@ -128,14 +106,14 @@ function getXml(cypressReport, junitSuites, options) {
   let totalSuitesTime = cypressReport.totalDuration;
   let totalTests = cypressReport.totalTests;
 
-  junitSuites.forEach(function(suite, index) {
+  junitSuites.forEach(function (suite, index) {
     const _suiteAttr = suite.testsuite[0]._attr;
     // properties are added before test cases so we want to make sure that we are grabbing test cases
     // at the correct index
     let cypressRun = cypressReport.runs[index];
 
     _suiteAttr.failures = cypressRun.stats.failures;
-    _suiteAttr.time = cypressRun.stats.wallClockDuration;
+    _suiteAttr.time = cypressRun.stats.wallClockDuration / 1000;
     _suiteAttr.skipped = cypressRun.stats.pending;
 
     if (!_suiteAttr.skipped) {
@@ -152,13 +130,13 @@ function getXml(cypressReport, junitSuites, options) {
     }
   };
 
-  if (stats.pending) {
+  if (cypressReport.totalPending) {
     rootSuite._attr.skipped = cypressReport.totalPending;
   }
 
   return xml({
-    testsuites: [ rootSuite ].concat(junitSuites)
-  }, { declaration: true, indent: '  ' });
+    testsuites: [rootSuite].concat(junitSuites)
+  }, {declaration: true, indent: '  '});
 }
 
 function writeXmlToDisk(xml, filePath) {
@@ -180,7 +158,7 @@ function writeXmlToDisk(xml, filePath) {
 }
 
 function flush(cypressReport, junitSuites, options) {
-  const xml = getXml(junitSuites);
+  const xml = getXml(cypressReport, junitSuites, options);
 
   writeXmlToDisk(xml, options.mochaFile);
 
@@ -207,25 +185,23 @@ module.exports = class {
     const junitSuites = [];
 
     if (fs.existsSync(this._options.mochaFile)) {
-      debug('removing report file', this._options.mochaFile);
+      console.debug('removing report file', this._options.mochaFile);
       fs.unlinkSync(this._options.mochaFile);
     }
 
-    cypressReport.forEach((suite) => {
+    cypressReport.runs.forEach((suite) => {
       junitSuites.push(getTestsuiteData(suite, this._options));
 
       suite.tests.forEach((test) => {
         if (test.state === 'passed') {
-          lastSuite(junitSuites).push(getTestcaseData(test));
-        }
-        else if (test.state === 'pending') {
-          const testcase = getTestcaseData(test);
+          lastSuite(junitSuites).push(getTestcaseData(test, null, this._options));
+        } else if (test.state === 'pending') {
+          const testcase = getTestcaseData(test, null, this._options);
 
-          testcase.testcase.push({ skipped: null });
+          testcase.testcase.push({skipped: null});
           lastSuite(junitSuites).push(testcase);
-        }
-        else if (test.state === 'failed') {
-          lastSuite(junitSuites).push(getTestcaseData(test, test.error));
+        } else if (test.state === 'failed') {
+          lastSuite(junitSuites).push(getTestcaseData(test, test.error, this._options));
         }
       });
     });
