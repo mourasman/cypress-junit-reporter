@@ -1,0 +1,22 @@
+{
+  "name": "@mourasman/cypress-junit-reporter",
+  "version": "1.0.0",
+  "description": "A JUnit reporter to be used with Cypress Module API",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mourasman/cypress-junit-reporter.git"
+  },
+  "keywords": [
+    "cypress",
+    "junit",
+    "reporter",
+    "test"
+  ],
+  "author": "Ricardo Moura <mail@ricardomoura.eu>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mourasman/cypress-junit-reporter/issues"
+  },
+  "homepage": "https://github.com/mourasman/cypress-junit-reporter#readme"
+}
