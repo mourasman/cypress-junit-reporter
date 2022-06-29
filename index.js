@@ -8,6 +8,7 @@ const stripAnsi = require('strip-ansi');
 const INVALID_CHARACTERS = ['\u001b'];
 
 console.log('inc scan');
+console.log('inc scan 2');
 
 function parsePropertiesFromEnv(envValue) {
   let properties = null;
